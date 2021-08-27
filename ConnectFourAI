@@ -1,0 +1,228 @@
+
+class Board:
+    """A data type representing a Connect-4 board
+       with an arbitrary number of rows and columns.
+    """
+
+    def colsToWin(self, ox):
+        allCol = []
+        for col in range(self.width):
+            self.addMove(col, ox)
+            if self.winsFor(ox) == True:
+                allCol = allCol + [col]
+            self.delMove(col)
+        return allCol
+
+
+    
+    def aiMove(self, ox):
+        if ox == 'X':
+            xo = 'O'
+        if ox == 'O':
+            xo = 'X'
+        if self.colsToWin(ox) == []:
+            if self.colsToWin(xo) == []:
+                for col in range(self.width):
+                    if self.allowsMove(col) == True:
+                        return col
+            else:
+                return self.colsToWin(xo)[0]
+        else:
+            return self.colsToWin(ox)[0]
+
+
+
+
+
+    def __init__(self, width, height):
+        """Construct objects of type Board, with the given width and height."""
+        self.width = width
+        self.height = height
+        self.data = [[' ']*width for row in range(height)]
+
+        # We do not need to return anything from a constructor!
+ 
+    def addMove(self, col, ox):
+        if self.data[self.height - 1][col] == ' ':
+            self.data[self.height - 1][col] = ox
+        else:
+            for row in range(0, self.height):
+                if self.data[row][col] != ' ':
+                    self.data[row - 1][col] = ox
+                    break
+
+    def clear(self):
+        for row in range(0, self.height):
+            for col in range(0, self.width):
+                self.data[row][col] = ' '
+
+    def isFull(self):
+        for row in range(0, self.height):
+            for col in range(0, self.width):
+                if self.data[row][col] == ' ':
+                    return False
+        return True
+
+    def delMove(self, c):
+        for row in range(self.height):
+            if self.data[row][c] != ' ':
+                self.data[row][c] = ' '
+                break
+
+    def inarow_Neast(self, ch, r_start, c_start, N):
+        NR = self.height
+        NC = self.width
+        L = ""
+        if c_start + N > NC:
+            return False
+        for i in range(N):
+            if self.data[r_start][c_start + i] == ch:
+                L = L + "1"
+        if L == "1"*N:
+            return True
+        else:
+            return False
+
+
+    def inarow_Nsouth(self, ch, r_start, c_start, N):
+        NR = self.height
+        NC = self.width
+        L = ""
+        if r_start + N > NR:
+            return False
+        for i in range(N):
+            if self.data[r_start + i][c_start] == ch:
+                L = L + "1"
+        if L == "1"*N:
+            return True
+        else:
+            return False
+
+
+    def inarow_Nsoutheast(self, ch, r_start, c_start, N):
+        NR = self.height
+        NC = self.width
+        L = ""
+        if r_start + N > NR:
+            return False
+        if c_start + N > NC:
+            return False
+        for i in range(N):
+            if self.data[r_start + i][c_start + i] == ch:
+                L = L + "1"
+        if L == "1"*N:
+            return True
+        else:
+            return False
+
+
+    def inarow_Nnortheast(self, ch, r_start, c_start, N):
+        NR = self.height
+        NC = self.width
+        L = ""
+        if r_start - N > NR:
+            return False
+        if c_start + N > NC:
+            return False
+        for i in range(N):
+            if self.data[r_start - i][c_start + i] == ch:
+                L = L + "1"
+        if L == "1"*N:
+            return True
+        else:
+            return False
+
+
+    
+
+    def winsFor(self, ox):
+        for row in range(0, self.height):
+            for col in range(0, self.width):
+                if self.inarow_Neast(ox, row, col, 4) == True:
+                    return True
+                if self.inarow_Nnortheast(ox, row, col, 4) == True:
+                    return True
+                if self.inarow_Nsouth (ox, row, col, 4) == True:
+                    return True
+                if self.inarow_Nsoutheast(ox, row, col, 4) == True:
+                    return True
+        return False
+
+    def hostGame(self): 
+        print("Welcome to Connect Four!")
+        print("Player 1 will use X and player 2 will use O")
+        print(self)
+        while True:
+            users_col = -1
+            while not self.allowsMove(users_col):
+                print(self)
+                ai_col = self.aiMove('X')
+                self.addMove(ai_col, 'X')
+                print(self)
+                if self.winsFor('X') == True:
+                    return "Player 1 Wins!"    
+                users_col = int(input("Player 2 Choose a column: "))
+                self.addMove(users_col, 'O')
+                print(self)
+                if self.winsFor('O') == True:
+                    return "Player 2 wins!"
+            
+
+
+    
+
+
+    def allowsMove(self, c):
+        if c < 0:
+            return False
+        if c >= self.width:
+            return False
+        if self.data[0][c] != ' ':
+            return False
+        else:
+            return True
+
+    def setBoard(self, moveString):
+        """Accepts a string of columns and places
+           alternating checkers in those columns,
+           starting with 'X'.
+
+           For example, call b.setBoard('012345')
+           to see 'X's and 'O's alternate on the
+           bottom row, or b.setBoard('000000') to
+           see them alternate in the left column.
+
+           moveString must be a string of one-digit integers.
+        """
+        nextChecker = 'X'   # start by playing 'X'
+        for colChar in moveString:
+            col = int(colChar)
+            if 0 <= col <= self.width:
+                self.addMove(col, nextChecker)
+            if nextChecker == 'X':
+                nextChecker = 'O'
+            else:
+                nextChecker = 'X'
+
+        
+
+
+
+    def __repr__(self):
+        """This method returns a string representation
+           for an object of type Board.
+        """
+        s = ''                          # the string to return
+        for row in range(0, self.height):
+            s += '|'
+            for col in range(0, self.width):
+                s += self.data[row][col] + '|'
+            s += '\n'
+
+        s += (2*self.width + 1) * '-'   # bottom of the board
+
+        # and the numbers underneath here
+
+        
+
+        return s       # the board is complete, return it
