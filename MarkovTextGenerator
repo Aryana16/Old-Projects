@@ -1,0 +1,42 @@
+
+
+
+
+    
+def createDictionary(filename):
+    f = open(filename)
+    text = f.read()
+    f.close()
+    LoW = text.split()
+    pw = '$'
+    d = {}
+
+
+
+    for nw in LoW:
+        if pw not in d:
+            d[pw] = [nw]
+        else:
+            d[pw] += [nw]
+        if nw[-1] in [".","!","?"]:
+            nw = '$'
+
+        pw = nw
+    return d
+
+
+
+import random
+
+def generateText(d, N):
+    next = '$'
+    text = ''
+    for i in range(N):
+        if next[-1] in [".","!","?"]:
+            next = random.choice(d['$'])
+        else:
+            next = random.choice(d[next])
+        text = text +" "+ next
+    return text
+
+    
