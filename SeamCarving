@@ -1,0 +1,882 @@
+package com.gradescope.photoeditor;
+
+import java.awt.*;
+import java.net.URL;
+
+public class Picture extends SimplePicture
+{
+        /////////////////////////// Static Variables //////////////////////////////
+
+        // Different axes available to flip a picture.
+        public static final int HORIZONTAL = 1;
+        public static final int VERTICAL = 2;
+        public static final int FORWARD_DIAGONAL = 3;
+        public static final int BACKWARD_DIAGONAL = 4;
+
+
+        //////////////////////////// Constructors /////////////////////////////////
+
+        /**
+         * A constructor that takes no arguments.
+         */
+        public Picture () {
+                super();
+        }
+
+        /**
+         * Creates a Picture from the file name provided.
+         *
+         * @param fileName The name of the file to create the picture from.
+         */
+        public Picture(String fileName) {
+                // Let the parent class handle this fileName.
+                super(fileName);
+        }
+
+        /**
+         * Creates a Picture from the width and height provided.
+         *
+         * @param width the width of the desired picture.
+         * @param height the height of the desired picture.
+         */
+        public Picture(int width, int height) {
+                // Let the parent class handle this width and height.
+                super(width, height);
+        }
+
+        /**
+         * Creates a copy of the Picture provided.
+         *
+         * @param pictureToCopy Picture to be copied.
+         */
+        public Picture (Picture pictureToCopy) {
+                // Let the parent class do the copying.
+                super(pictureToCopy);
+        }
+
+        /**
+         * Creates a copy of the SimplePicture provided.
+         *
+         * @param pictureToCopy SimplePicture to be copied.
+         */
+        public Picture (SimplePicture pictureToCopy) {
+                // Let the parent class do the copying.
+                super(pictureToCopy);
+        }
+
+        /////////////////////////////// Methods ///////////////////////////////////
+
+        
+
+        /**
+         * Helper method to determine if a x and y coordinate is valid (within the image)
+         *
+         * @param ix is the x value that might be outside of the image
+         * @param iy is the y value that might be outside of the image
+         * @return true if the x and y values are within the image and false otherwise
+         */
+        @SuppressWarnings("unused")
+        private boolean inImage(int ix, int iy) {
+                return ix >= 0 && ix < this.getWidth() && iy >= 0
+                                && iy < this.getHeight();
+        }
+
+        /**
+         * @return A string with information about the picture, such as
+         *      filename, height, and width.
+         */
+        public String toString() {
+                String output = "Picture, filename = " + this.getFileName() + "," +
+                " height = " + this.getHeight() + ", width = " + this.getWidth();
+                return output;
+        }
+        /**
+         * Equals method for two Picture objects.
+         *
+         * @param obj is an Object to compare to the current Picture object
+         * @return true if obj is a Picture object with the same size as the
+         *         original and with the same color at each Pixel
+         */
+        public boolean equals(Object obj) {
+                if (!(obj instanceof Picture)) {
+                        return false;
+                }
+
+                Picture p = (Picture) obj;
+                // Check that the two pictures have the same dimensions.
+                if ((p.getWidth() != this.getWidth()) ||
+                                (p.getHeight() != this.getHeight())) {
+                        return false;
+                }
+
+                // Check each pixel.
+                for (int x = 0; x < this.getWidth(); x++) {
+                        for(int y = 0; y < this.getHeight(); y++) {
+                                if (!this.getPixel(x, y).equals(p.getPixel(x, y))) {
+                                        return false;
+                                }
+                        }
+                }
+
+                return true;
+        }
+
+        /**
+         * Helper method for loading a picture in the current directory.
+         */
+        protected static Picture loadPicture(String pictureName) {
+                URL url = Picture.class.getResource(pictureName);
+                return new Picture(url.getFile().replaceAll("%20", " "));
+        }
+
+        //////////////////////////// Debugging Methods /////////////////////////////////
+
+        /**
+         * Method to print out a table of the intensity for each Pixel in an image
+         */
+        public void printLuminosity(){
+                int pictureHeight = this.getHeight();
+                int pictureWidth = this.getWidth();
+                System.out.println("Luminosity:");
+                for(int y = 0; y < pictureHeight; y++) {
+                        System.out.print("[");
+                        for(int x = 0; x < pictureWidth; x++) {
+                                System.out.print(this.luminosityOfPixel(x, y) + "\t");
+                        }
+                        System.out.println("]");
+                }
+        }
+        /**
+         * Method to print out a table of the energy for each Pixel in an image
+         */
+        public void printEnergy(){
+                int pictureHeight = this.getHeight();
+                int pictureWidth = this.getWidth();
+                System.out.println("Energy:");
+                for(int y = 0; y < pictureHeight; y++) {
+                        System.out.print("[");
+                        for(int x = 0; x < pictureWidth; x++) {
+                                System.out.print(this.getEnergy(x, y) + "\t");
+                        }
+                        System.out.println("]");
+                }
+        }
+
+        /**
+         * Prints a two dimensional array of ints
+         * @param array
+         */
+        public static void printArray(int[][] array) {
+                int height = array.length;
+                int width = array[0].length;
+                for (int r = 0; r < width; r++) {
+                        for (int c = 0; c < height; c++) {
+                                System.out.print(array[c][r] + "\t");
+                        }
+                        System.out.println();
+                }
+        }
+
+        /**
+         * This method can be used like the other Picture methods, to create a
+         * Picture that shows what Pixels are different between two Picture objects.
+         *
+         * @param picture2 is a Picture to compare the current Picture to
+         * @return returns a new Picture with red pixels indicating differences between
+         *                      the two Pictures
+         */
+        public Picture showDifferences(Picture picture2){
+                Picture picOutput = new Picture(this);
+
+                int pictureHeight = this.getHeight();
+                int pictureWidth = this.getWidth();
+                Color red = new Color(255, 0, 0);
+                for(int x = 0; x < pictureWidth; x++) {
+                        for(int y = 0; y < pictureHeight; y++) {
+                                if (!this.getPixel(x, y).equals(picture2.getPixel(x, y))) {
+                                        Pixel p = picOutput.getPixel(x, y);
+                                        p.setColor(red);
+                                }
+                        }
+                }
+                return picOutput;
+        }
+
+        /**
+         * This helper method is used to test the method fillTables. Specifically it
+         * focuses on the 2D array "table"
+         */
+        public int[][] getTableAfterFillTables() {
+                int height = this.getHeight();
+                int width = this.getWidth();
+
+                int[][] table = new int[width][height];
+                int[][] parent = new int[width][height];
+                this.fillTables(table, parent);
+                return table;
+        }
+
+        /**
+         * This helper method is used to test the method fillTables. Specifically it
+         * focuses on the 2D array "parent"
+         */
+        public int[][] getParentAfterFillTables() {
+                int height = this.getHeight();
+                int width = this.getWidth();
+
+                int[][] table = new int[width][height];
+                int[][] parent = new int[width][height];
+                this.fillTables(table, parent);
+                return parent;
+        }
+
+        //////////////////////////// Grayscale Example /////////////////////////////////
+        /*
+         * Each of the methods below is constructive: in other words, each of the
+         * methods below generates a new Picture, without permanently modifying the
+         * original Picture.
+         */
+
+        /**
+         * Returns a new Picture, which is the gray version of the current Picture (this)
+         *
+         * This is an example where all of the pixel-processing occurs within
+         * the nested for loops (over the columns, x, and rows, y).
+         *
+         * @return A new Picture that is the grayscale version of this Picture.
+         */
+        public Picture grayscale2() {
+                Picture picOutput = new Picture(this);
+
+                int pictureHeight = this.getHeight();
+                int pictureWidth = this.getWidth();
+
+                for (int x = 0; x < pictureWidth; x++) {
+                        for (int y = 0; y < pictureHeight; y++) {
+
+                                Pixel currentPixel = picOutput.getPixel(x, y);
+
+                                Color c = currentPixel.getColor();
+                                int redComponent = c.getRed();
+                                int greenComponent = c.getGreen();
+                                int blueComponent = c.getBlue();
+
+                                int average = (redComponent + greenComponent + blueComponent) / 3;
+
+                                currentPixel.setRed(average);
+                                currentPixel.setGreen(average);
+                                currentPixel.setBlue(average);
+                        }
+                }
+                return picOutput;
+        }
+
+
+        /**
+         * Converts the Picture into grayscale. Since any variation of gray
+         *      is obtained by setting the red, green, and blue components to the same
+         *      value, a Picture can be converted into its grayscale component
+         *      by setting the red, green, and blue components of each pixel in the
+         *      new picture to the same value: the average of the red, green, and blue
+         *      components of the same pixel in the original.
+         *
+         * This example shows a more modular approach: grayscale uses a helper
+         * named setPixelToGray; setPixelToGray, in turn, uses the helper averageOfRGB.
+         *
+         * @return A new Picture that is the grayscale version of this Picture.
+         */
+        public Picture grayscale() {
+                Picture picOutput = new Picture(this);
+
+                int pictureHeight = this.getHeight();
+                int pictureWidth = this.getWidth();
+
+                for(int x = 0; x < pictureWidth; x++) {
+                        for(int y = 0; y < pictureHeight; y++) {
+                                picOutput.setPixelToGray(x, y);
+                        }
+                }
+                return picOutput;
+        }
+
+        /**
+         * Helper method for grayscale() to set a pixel at (x, y) to be gray.
+         *
+         * @param x The x-coordinate of the pixel to be set to gray.
+         * @param y The y-coordinate of the pixel to be set to gray.
+         */
+        private void setPixelToGray(int x, int y) {
+                Pixel currentPixel = this.getPixel(x, y);
+                int average = Picture.averageOfRGB(currentPixel.getColor());
+                currentPixel.setRed(average);
+                currentPixel.setGreen(average);
+                currentPixel.setBlue(average);
+        }
+        /**
+         * Helper method for grayscale() to calculate the
+         * average value of red, green and blue.
+         *
+         * @param c is the Color to be averaged
+         * @return The average of the red, green and blue values of this Color
+         */
+        private static int averageOfRGB(Color c) {
+                int redComponent = c.getRed();
+                int greenComponent = c.getGreen();
+                int blueComponent = c.getBlue();
+
+                // this uses integer division, which is what we want here
+                // pixels always need to have integer values from 0 to 255 (inclusive)
+                // for their red, green, and blue components:
+                int average = (redComponent + greenComponent + blueComponent) / 3;
+                return average;
+        }
+
+        //////////////////////////// Change Colors Menu /////////////////////////////////
+        public Picture changeColorHelper(int redChange, int greenChange, int blueChange) {
+            Picture picOutput = new Picture(this);
+
+            int pictureHeight = this.getHeight();
+            int pictureWidth = this.getWidth();
+
+            for (int x = 0; x < pictureWidth; x++) {
+                    for (int y = 0; y < pictureHeight; y++) {
+
+                            Pixel currentPixel = picOutput.getPixel(x, y);
+
+                            Color c = currentPixel.getColor();
+                            int redComponent = c.getRed();
+                            int greenComponent = c.getGreen();
+                            int blueComponent = c.getBlue();
+                            
+                            if(redComponent + redChange > 255){
+                            	currentPixel.setRed(255);
+                            }
+                            else if(redComponent + redChange < 0){
+                            	currentPixel.setRed(0);
+                            }
+                            else {
+                                currentPixel.setRed(redComponent + redChange);
+                            }
+                            if(greenComponent + greenChange > 255){
+                            	currentPixel.setGreen(255);
+                            }
+                            else if(greenComponent + greenChange < 0){
+                            	currentPixel.setGreen(0);
+                            }
+                            else {
+                                currentPixel.setGreen(greenComponent + greenChange);
+                            }
+                            if(blueComponent + blueChange > 255){
+                            	currentPixel.setBlue(255);
+                            }
+                            else if(blueComponent + blueChange < 0){
+                            	currentPixel.setBlue(0);
+                            }
+                            else {
+                                currentPixel.setBlue(blueComponent + blueChange);
+                            }
+
+                    }
+            }
+            return picOutput;
+    }
+
+        //////////////////////////// Negate /////////////////////////////////
+
+        /**
+         * Converts the Picture into its photonegative version. The photonegative
+         *      version of an image is obtained by setting each of the red, green,
+         *      and blue components of every pixel to a value that is 255 minus their
+         *      current values.
+         *
+         * @return A new Picture that is the photonegative version of this Picture.
+         */
+        // This method creates a new picture and sets each color component as 255 minus
+        // the color component of the original image.
+        public Picture negate() {
+            Picture picOutput = new Picture(this);
+
+            int pictureHeight = this.getHeight();
+            int pictureWidth = this.getWidth();
+
+            for (int x = 0; x < pictureWidth; x++) {
+                    for (int y = 0; y < pictureHeight; y++) {
+
+                            Pixel currentPixel = picOutput.getPixel(x, y);
+
+                            Color c = currentPixel.getColor();
+                            int redComponent = c.getRed();
+                            int greenComponent = c.getGreen();
+                            int blueComponent = c.getBlue();
+                            
+                            currentPixel.setRed(255 - redComponent);
+                            currentPixel.setGreen(255 - greenComponent);
+                            currentPixel.setBlue(255 - blueComponent);
+                    }
+            }
+            return picOutput;
+    }
+        //////////////////////////// Lighten /////////////////////////////////
+
+        /**
+         * Creates an image that is lighter than the original image. The range of
+         * each color component should be between 0 and 255 in the new image. The
+         * alpha value should not be changed.
+         *
+         * @return A new Picture that has every color value of the Picture increased
+         *         by the lightenAmount.
+         */
+        // This method uses the helper function by adding lightenAmount to each color
+        // component of the original image and creating a new image.
+        public Picture lighten(int lightenAmount) {
+                Picture lightened = this.changeColorHelper(lightenAmount, lightenAmount, lightenAmount);
+                return lightened;
+        }
+
+        //////////////////////////// Darken /////////////////////////////////
+
+        /**
+         * Creates an image that is darker than the original image.The range of
+         * each color component should be between 0 and 255 in the new image. The
+         * alpha value should not be changed.
+         *
+         * @return A new Picture that has every color value of the Picture decreased
+         *         by the darkenAmount.  
+         */
+        // This method uses the helper function to create a new image and sets each of its color components as
+        // those of the original image minus darkenAmount.
+        public Picture darken(int darkenAmount) {
+            Picture darkened = this.changeColorHelper(-darkenAmount, -darkenAmount, -darkenAmount);
+            return darkened;
+        }
+
+        //////////////////////////// Add[Blue,Green,Red] /////////////////////////////////
+
+        /**
+         * Creates an image where the blue value has been increased by amount.The range of
+         * each color component should be between 0 and 255 in the new image. The
+         * alpha value should not be changed.
+         *
+         * @return A new Picture that has every blue value of the Picture increased
+         *         by amount.
+         */
+        // These methods use the helper function to create a new image and add "amount" to
+        // the original blue, red, and green components respectively.
+        public Picture addBlue(int amount) {
+            Picture blued = this.changeColorHelper(0, 0, amount);
+            return blued;
+        }
+
+        /**
+         * Creates an image where the red value has been increased by amount. The range of
+         * each color component should be between 0 and 255 in the new image. The
+         * alpha value should not be changed.
+         *
+         * @return A new Picture that has every red value of the Picture increased
+         *         by amount.
+         */
+        // adds an amount of red color to every pixel
+        public Picture addRed(int amount) {
+            Picture reddened = this.changeColorHelper(amount, 0, 0);
+            return reddened;
+        }
+
+        /**
+         * Creates an image where the green value has been increased by amount. The range of
+         * each color component should be between 0 and 255 in the new image. The
+         * alpha value should not be changed.
+         *
+         * @return A new Picture that has every green value of the Picture increased
+         *         by amount.
+         */
+        //adds an amount of green color to each pixel
+        public Picture addGreen(int amount) {
+            Picture greened = this.changeColorHelper(0, amount, 0);
+            return greened;
+        }
+
+        //////////////////////////// Rotate Right /////////////////////////////////
+
+        /**
+         * Returns a new picture where the Picture is rotated to the right by 90
+         * degrees. If the picture was originally 50 Pixels by 70 Pixels, the new
+         * Picture should be 70 Pixels by 50 Pixels.
+         *
+         * @return a new Picture rotated right by 90 degrees
+         */
+        //creates a new picture with a height of width and a width of height
+        //and moves every pixel to a clockwise rotation of the image
+        public Picture rotateRight() {
+        	int newWidth = this.getHeight();
+        	int newHeight = this.getWidth();
+        	Picture myPicture = new Picture(newWidth, newHeight);
+            for (int x = 0; x < newWidth; x++) {
+                for (int y = 0; y < newHeight; y++) {
+
+                        Pixel currentPixel = myPicture.getPixel(x, y);
+                        Pixel originalPixel = this.getPixel(y, newWidth -1 -x);
+
+                        Color c = originalPixel.getColor();
+                        int originalredComponent = c.getRed();
+                        int originalgreenComponent = c.getGreen();
+                        int originalblueComponent = c.getBlue();
+                        
+                        currentPixel.setRed(originalredComponent);
+                        currentPixel.setGreen(originalgreenComponent);
+                        currentPixel.setBlue(originalblueComponent);
+                }
+        }
+        return myPicture;
+        }
+
+        //////////////////////////// Seam Carving Section /////////////////////////////////
+
+        //////////////////////////// Luminosity /////////////////////////////////
+        /**
+         * Returns a Picture of a version of grayscale using luminosity instead
+         * of a direct average. The Picture should be converted into its luminosity
+         * version by setting the red, green, and blue components of each pixel in
+         * the new picture to the same value: the luminosity of the red, green, and
+         * blue components of the same pixel in the original. Where luminosity =
+         * 0.21 * redness + 0.72 * greenness + 0.07 * blueness
+         *
+         * @return A new Picture that is the luminosity version of this Picture.
+         */
+        //returns a luminosity version of the picture by setting each pixel to its luminosity
+        public Picture luminosity(){
+            Picture picOutput = new Picture(this);
+
+            int pictureHeight = this.getHeight();
+            int pictureWidth = this.getWidth();
+
+            for (int x = 0; x < pictureWidth; x++) {
+                    for (int y = 0; y < pictureHeight; y++) {
+                    	Pixel currentPixel = picOutput.getPixel(x, y);
+                    	currentPixel.setRed(luminosityOfPixel(x, y));
+                        currentPixel.setGreen(luminosityOfPixel(x, y));
+                        currentPixel.setBlue(luminosityOfPixel(x, y));
+                    }
+            }
+            return picOutput;
+        }
+
+
+        /**
+         * Helper method for luminosity() to calculate the
+         * luminosity of a pixel at (x,y).
+         *
+         * @param x  the x-coordinate of the pixel
+         * @param y  the y-coordinate of the pixel
+         * @return The luminosity of that pixel
+         */
+        //averages the three colors of each pixel using the luminosity constants
+        private int luminosityOfPixel(int x, int y) {
+            Pixel currentPixel = this.getPixel(x, y);
+
+            Color c = currentPixel.getColor();
+            int redness = c.getRed();
+            int greenness = c.getGreen();
+            int blueness = c.getBlue();
+            
+            int lum = (int)(0.21 * redness + 0.72 * greenness + 0.07 * blueness);
+            return lum;
+        }
+
+        //////////////////////////// Energy /////////////////////////////////
+
+        /**
+         * Returns a Picture into a version of the energy of the Picture
+         *
+         * @return A new Picture that is the energy version of this Picture.
+         */
+        //sets each picture to its energy version to create an energy version of the picture
+        public Picture energy(){
+            Picture picOutput = new Picture(this);
+
+            int pictureHeight = this.getHeight();
+            int pictureWidth = this.getWidth();
+
+            for (int x = 0; x < pictureWidth; x++) {
+                    for (int y = 0; y < pictureHeight; y++) {
+                    	Pixel currentPixel = picOutput.getPixel(x, y);
+                    	currentPixel.setRed(getEnergy(x, y));
+                        currentPixel.setGreen(getEnergy(x, y));
+                        currentPixel.setBlue(getEnergy(x, y));
+                    }
+            }
+            return picOutput;
+        }
+
+        /**
+         * Helper method for energy() to calculate the
+         * energy of a Pixel.
+         *
+         * @param x is the x value of the Pixel to be evaluated
+         * @param y is the y value of the Pixel to be evaluated
+         * @return The energy of this Pixel
+         */
+        //gets the energy of a given pixel by adding the differences of the current
+        //pixel's luminosity with the one to the side and below it
+        private int getEnergy(int x, int y) {
+        	int pictureHeight = this.getHeight();
+            int pictureWidth = this.getWidth();
+                	if( y < pictureHeight - 1) {
+                		if(x < pictureWidth - 1) {
+                			return Math.abs(luminosityOfPixel(x, y) - luminosityOfPixel(x+1,y)) + Math.abs(luminosityOfPixel(x, y) - luminosityOfPixel(x,y+1));
+                		}
+                		else {
+                			return Math.abs(luminosityOfPixel(x, y) - luminosityOfPixel(x-1,y)) + Math.abs(luminosityOfPixel(x, y) - luminosityOfPixel(x,y+1));
+                		}
+                	}
+                	else {
+                		if(x < pictureWidth - 1) {
+                			return Math.abs(luminosityOfPixel(x, y) - luminosityOfPixel(x+1,y)) + Math.abs(luminosityOfPixel(x, y) - luminosityOfPixel(x,y-1));
+                		}
+                		else {
+                			return Math.abs(luminosityOfPixel(x, y) - luminosityOfPixel(x-1,y)) + Math.abs(luminosityOfPixel(x, y) - luminosityOfPixel(x,y-1));
+                		}
+                	}
+                }
+        	
+
+
+        //////////////////////////// Compute Seam /////////////////////////////////
+
+        /**
+         * helper method computeSeam returns an int array with the x-coordinates
+         * (columns) of the lowest-energy seam running from the top row to the
+         * bottom row.
+         *
+         * We would normally make this method private, but it is public to enable us
+         * to test it. See the course assignment for additional details.
+         */
+        //computes the lowest energy seam in an image
+        public int[] computeSeam() {
+                int height = this.getHeight();
+                int width = this.getWidth();
+
+                int[][] table = new int[width][height];
+                int[][] parent = new int[width][height];
+                this.fillTables(table, parent);
+                
+                int[] bottomRow = new int[width];
+                for (int i = 0; i < width; i++) {
+                	bottomRow[i] = table[i][height-1];
+                }
+                
+                int[] seam = new int[height];
+                int bottomIndex = lowestRowEnergy(bottomRow);
+                seam[height-1] = bottomIndex;
+                for(int y = height - 1; y > 0; y--) {
+                	seam[y-1] = parent[bottomIndex][y];
+                	bottomIndex = seam[y-1];
+                }
+                return seam;
+        }
+        
+        //finds the minimum value of the elements of a row
+        public int lowestRowEnergy(int[] row){
+        	  int minEnergy = row[0];
+        	  int index = 0;
+        	  for(int i=1;i<row.length;i++){
+        	    if(row[i] < minEnergy){
+        		  minEnergy = row[i];
+        		  index = i;
+        		}
+        	  }
+        	  return index;
+        	}
+        
+        
+        
+        /**
+         * helper method fillTables is passed two, 2D arrays and fills them with the
+         * "table" and "parent" contents as described in the assignment.
+         *
+         * See the course assignment for additional details.
+         */
+        //fills the table and parent arrays with the cumulative energy table
+        //and the indices of the lowest value in the row above respectively
+        private void fillTables(int[][] table, int[][] parent) {
+        	int height = this.getHeight();
+            int width = this.getWidth();
+            
+            
+            for (int x = 0; x < width; x++) {
+            	parent[x][0] = 0;
+            	table[x][0] = getEnergy(x, 0);
+            }
+
+        	for(int y = 1; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+            		if(x == 0) {
+            			if (table[x][y-1] <= table[x+1][y-1]) {
+            				parent[x][y] = x;
+            				table[x][y] = getEnergy(x, y) + table[x][y-1];
+            			}
+            			else {
+            				parent[x][y] = x+1;
+            				table[x][y] = getEnergy(x, y) + table[x+1][y-1];
+            			}
+            		}
+            		else if(x == width - 1) {
+            			if (table[x-1][y-1] < table[x][y-1]) {
+            				parent[x][y] = x-1;
+            				table[x][y] = getEnergy(x, y) + table[x-1][y-1];
+            			}
+            			else {
+            				parent[x][y] = x;
+            				table[x][y] = getEnergy(x, y) + table[x][y-1];
+            			}
+            		}
+            		else {
+            			if((table[x][y-1] <= table[x-1][y-1])&&(table[x][y-1]<=table[x+1][y-1])) {
+            				parent[x][y] = x;
+            				table[x][y] = getEnergy(x, y) + table[x][y-1];
+            			}
+            			else if(table[x-1][y-1] <= table[x+1][y-1]) {
+            				parent[x][y] = x-1;
+            				table[x][y] = getEnergy(x, y) + table[x-1][y-1];
+            			}
+            			else {
+            				parent[x][y] = x+1;
+            				table[x][y] = getEnergy(x, y) + table[x+1][y-1];
+            			}
+            		}
+            	}
+            }
+
+        }
+
+
+        //////////////////////////// Show Seam /////////////////////////////////
+
+        /**
+         * Returns a new image, with the lowest cost seam shown in red. The lowest
+         * cost seam is calculated by calling computeSeam()
+         *
+         * @return a new Picture
+         */
+        //colors the seam in red on an image
+        public Picture showSeam(){
+        	Picture picOutput = new Picture(this);
+        	int[] seam = this.computeSeam();
+        	int height = this.getHeight();
+        	for(int y = 0; y < height; y++) {
+
+                Pixel currentPixel = picOutput.getPixel(seam[y], y);
+                
+                currentPixel.setRed(255);
+                currentPixel.setGreen(0);
+                currentPixel.setBlue(0);
+        		
+        	}   
+              return picOutput;  
+        }
+
+        //////////////////////////// Carving (2 methods) /////////////////////////////////
+
+        /**
+         * Returns a new picture, where the seam identified by calling computeSeam() is
+         * removed. The resulting image should be the same height as the original
+         * but have a width that is one smaller than the original.
+         */
+        //removes the seam from an image
+        public Picture carve(){
+        	int height = this.getHeight();
+        	int width = this.getWidth()-1;
+        	Picture newPicture = new Picture(width, height);
+        	int[] seam = this.computeSeam();	
+        	
+        	for(int y = 0; y < height; y++) {
+        		for(int x = 0; x < seam[y]; x ++) {
+        			
+                    Pixel currentPixel = this.getPixel(x, y);
+                    Color c = currentPixel.getColor();
+                    int redComponent = c.getRed();
+                    int greenComponent = c.getGreen();
+                    int blueComponent = c.getBlue();
+                    
+                    Pixel kurrentPixel = newPicture.getPixel(x,  y);
+                    kurrentPixel.setRed(redComponent);
+                    kurrentPixel.setGreen(greenComponent);
+                    kurrentPixel.setBlue(blueComponent);
+        	}
+        }
+        	for(int y = 0; y < height; y++) {
+        		for(int x = seam[y]+1; x < width+1; x ++) {
+        			
+                    Pixel currentPixel = this.getPixel(x, y);
+                    Color c = currentPixel.getColor();
+                    int redComponent = c.getRed();
+                    int greenComponent = c.getGreen();
+                    int blueComponent = c.getBlue();
+                    
+                    Pixel kurrentPixel = newPicture.getPixel(x-1,  y);
+                    kurrentPixel.setRed(redComponent);
+                    kurrentPixel.setGreen(greenComponent);
+                    kurrentPixel.setBlue(blueComponent);
+        	}
+        }
+        	return newPicture;
+        }
+
+        /**
+         * This returns a new Picture that has a number of seams removed.
+         *
+         * If the input is greater than the width of the Picture, first print an error using
+         * System.err instead of System.out, then return null. Here is the error message:
+         *
+         * System.err.println("Cannot call carveMany with argument " + numSeams + " on image of width " + this.getWidth());
+         *
+         * @param numSeams is the number of times that carve should be called
+         * @return a new picture with numSeams removed
+         */
+        //carves an image using multiple seams
+        public Picture carveMany(int numSeams){
+        	int width = this.getWidth();
+        	
+                if(numSeams > width) {
+                	System.err.println("Cannot call carveMany with argument " + numSeams + " on image of width " + this.getWidth());
+                	return null;
+                }
+                else {
+                	Picture newPicture = this.carve();
+                	if(numSeams == 1) {
+                		return newPicture;
+                	}
+                	else {
+                	return newPicture.carveMany(numSeams-1);
+                }
+                
+        }
+}
+
+
+        
+
+       
+
+
+        //////////////////////////////// Main Method //////////////////////////////////
+
+        public static void main(String[] args) {
+                // Try this code as you start debugging...
+                //              Picture tiny            = Picture.loadPicture("Tiny.bmp");
+                //              Picture tinyGray    = tiny.grayscale();
+                //              tiny.explore(); // opens in the regular, zoomable window
+                //              tinyGray.show(); // opens in a simpler window without the controls
+
+                // This asks you to pick a file and then launches the PictureExplorer
+                //              Picture initialPicture = new PictureStarter(
+                //                              FileChooser.pickAFile(FileChooser.OPEN));
+                //              initialPicture.explore();
+                Picture pic             = Picture.loadPicture("Micro.bmp");
+                Picture picCopy         = new Picture(pic);
+                Picture picCorrect      = Picture.loadPicture("MicroCarve.bmp");
+                Picture picTest         = pic.carve();
+                picTest.explore();
+                
+        }
+
+} // End of Picture class
